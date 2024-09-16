@@ -8,13 +8,14 @@
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
 #include <string>
+#include <unistd.h>
 #include <vector>
 #include <fstream>
 
 #include "imgui_internal.h"
 // #include "misc/freetype/imgui_freetype.h"
 
-// #include "/Users/aaa/myfile/bitbucket/clib/AronCLib.h"
+#include "/Users/aaa/myfile/bitbucket/cpplib/AronLib.h"
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
 #endif
@@ -28,21 +29,6 @@ using namespace std;
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
-
-
-vector<string> readFile(string fname) {
-    std::ifstream file(fname);
-    vector<string> retVec;
-    if (file.is_open()) {
-        std::string line;
-        while(getline(file, line)) {
-            retVec.push_back(line);
-        }
-        file.close();
-    }
-    return retVec;
-}
-
 
 bool ShowStyleSelectorAron(const char* label)
 {
@@ -64,6 +50,12 @@ bool ShowStyleSelectorAron(const char* label)
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_E && action == GLFW_PRESS)
+        printf("press\n");
 }
 
 int main(int, char**)
@@ -124,7 +116,7 @@ int main(int, char**)
     // ImFont* font1 = io.Fonts->AddFontFromFileTTF("/System/Library/Fonts/NewYork.ttf", size_pixels);
     ImFont* font1 = io.Fonts->AddFontFromFileTTF("/System/Library/Fonts/SFNSMono.ttf", size_pixels);
 
-    
+
     // Load Fonts
     // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
     // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
@@ -147,19 +139,36 @@ int main(int, char**)
     ImVec4 text_color =  ImVec4(0.75f, 0.75f, 0.80f, 1.00f);
     ImGuiStyle* mystyle = &ImGui::GetStyle();
     bool isColorEdit = false;
-
-    std::string fName = "/tmp/f.x";
+    // std::string fName = "/tmp/f.x";
+    std::string fName = getEnv("glog");
+    bool stopRead = false;
+    long oneSec = 1000000;
+    bool isEscapePressed = false;
+    std::vector<std::string> vec;
 
 
     // Main loop
-    while (!glfwWindowShouldClose(window))
-    {
+    while (!glfwWindowShouldClose(window) && !isEscapePressed) {
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
         glfwPollEvents();
+
+        glfwSetKeyCallback(window, key_callback);
+        int state = glfwGetKey(window, GLFW_KEY_E);
+        if (state == GLFW_PRESS) {
+            printf("press GLFW_KEY_E\n");
+            stopRead = !stopRead;
+            usleep(1*oneSec);
+        }
+
+        state = glfwGetKey(window, GLFW_KEY_ESCAPE);
+        if (state == GLFW_PRESS) {
+            printf("Press GLFW_KEY_ESCPE\n");
+            isEscapePressed = true;
+        }
 
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
@@ -173,23 +182,32 @@ int main(int, char**)
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         {
 	    int len = 0;
-	    std::vector<std::string> vec = readFile(fName);
-            static float f = 0.0f;
-            static int counter = 0;
-	    
+        int nline = 30;
+	    // std::vector<std::string> vec = readFile(fName);
+        // usleep(2*oneSec);
+        if(!stopRead){
+            vec = readFileBackward(fName, nline);
+        }
+        static float f = 0.0f;
+        static int counter = 0;
+
 	    // ImGui::ShowStyleSelector("Colors##Selector");
 	    ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 	    ImGui::ColorEdit3("text color", (float*)&text_color); // Edit 3 floats representing a color
 	    // SEE: imgui_draw.cpp  Change text color
 	    ImVec4* colors = mystyle->Colors;
 	    colors[ImGuiCol_Text]                   = text_color;  // ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-            ImGui::Begin(fName.c_str());    // Create a window called "Hello, world!" and append into it.
-	    
+        ImGui::Begin(fName.c_str());    // Create a window called "Hello, world!" and append into it.
+
 	    ImGui::PushFont(font1);
 	    // ImGui::Text("%s", s.c_str());               // Display some text (you can use a format strings too)
-	    for (std::string vs : vec){
-	      ImGui::Text("%s", vs.c_str()); 
-	    }
+
+        // KEY: Get the last 30 lines
+        int count = 0;
+        vector<std::string> tmpVec(vec);
+        for (std::string vs : tmpVec){
+            ImGui::Text("%s", vs.c_str());
+        }
 	    ImGui::PopFont();
 
             // ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state

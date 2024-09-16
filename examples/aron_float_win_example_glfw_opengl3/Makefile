@@ -23,8 +23,17 @@ OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 UNAME_S := $(shell uname -s)
 LINUX_GL_LIBS = -lGL
 
+
+# cppLib=$HOME/myfile/bitbucket/cpplib
 CXXFLAGS = -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends
-CXXFLAGS += -g -Wall -Wformat
+# CXXFLAGS += -g -Wall -Wformat
+#
+# Tue 14 Dec 14:41:56 2021
+# KEY: flags are for $b/cpplib/AronLib.h
+CXXFLAGS += -std=c++14 -g -Wall -Wformat -lboost_filesystem -lboost_system
+
+# This is the original flags from IMGUI
+# CXXFLAGS += -g -Wall -Wformat
 LIBS =
 
 ##---------------------------------------------------------------------
@@ -55,7 +64,7 @@ ifeq ($(UNAME_S), Darwin) #APPLE
 	LIBS += -lglfw
 
 
-	CXXFLAGS += -I/usr/local/include -I/opt/local/include -I/opt/homebrew/include 
+	CXXFLAGS += -I/usr/local/include -I/opt/local/include -I/opt/homebrew/include
 	CFLAGS = $(CXXFLAGS)
 endif
 
@@ -82,6 +91,7 @@ endif
 
 all: $(EXE)
 	@echo Build complete for $(ECHO_MESSAGE)
+	@echo "Binary file =>" $(EXE)
 
 $(EXE): $(OBJS)
 	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS)
